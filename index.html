@@ -214,13 +214,27 @@ function generateQR() {
 
 function downloadQR() {
     const canvas = document.getElementById("qrCanvas");
+
+    // Convert canvas to JPG
+    const dataURL = canvas.toDataURL("image/jpeg", 0.95);
+
+    // Create a real anchor element in the DOM
     const link = document.createElement("a");
+    link.href = dataURL;
 
-    link.href = canvas.toDataURL("image/jpeg", 0.95);
-    link.download = "qr_code.jpg";
+    // Force correct filename
+    link.setAttribute("download", "qr_code.jpg");
 
+    // Append to body so browser treats it as a real element
+    document.body.appendChild(link);
+
+    // Trigger download
     link.click();
+
+    // Clean up
+    document.body.removeChild(link);
 }
+
 </script>
 
 
