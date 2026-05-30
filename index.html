@@ -168,9 +168,16 @@ function generateQR() {
 function downloadQR() {
     const canvas = document.getElementById("qrCanvas");
     const link = document.createElement("a");
-    link.download = "qr_code.png";
-    link.href = canvas.toDataURL("image/png");
+
+    // Force JPG output
+    link.href = canvas.toDataURL("image/jpeg", 0.95);
+
+    // Force correct filename
+    link.download = "qr_code.jpg";
+
     link.click();
+
+
 }
 </script>
 
