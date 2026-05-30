@@ -97,16 +97,17 @@ function generateQR() {
         return;
     }
 
-    document.getElementById("qr-title").innerText = title;
-
     const canvas = document.getElementById("qrCanvas");
     const ctx = canvas.getContext("2d");
 
     const qrSize = 500;
-    canvas.width = qrSize;
-    canvas.height = qrSize;
+    const titleHeight = 80;
+    const totalHeight = qrSize + titleHeight;
 
-    // Generate QR code on hidden element
+    canvas.width = qrSize;
+    canvas.height = totalHeight;
+
+    // Generate QR code in temp div
     const tempDiv = document.createElement("div");
     const qr = new QRCode(tempDiv, {
         text: link,
@@ -121,32 +122,45 @@ function generateQR() {
         qrImage.src = qrImg.src;
 
         qrImage.onload = () => {
-            ctx.drawImage(qrImage, 0, 0, qrSize, qrSize);
+            // Draw title
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 40px Inter";
+            ctx.textAlign = "center";
+            ctx.fillText(title, qrSize / 2, 50);
 
-            if (imageFile) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const uploadedImg = new Image();
-                    uploadedImg.src = e.target.result;
+            // Draw QR code under title
+            ctx.drawImage(qrImage, 0, titleHeight, qrSize, qrSize);
 
-                    uploadedImg.onload = () => {
-                        const imgSize = qrSize * 0.25; // 25% of QR size
-                        const x = (qrSize - imgSize) / 2;
-                        const y = (qrSize - imgSize) / 2;
-
-                        ctx.beginPath();
-                        ctx.arc(x + imgSize/2, y + imgSize/2, imgSize/2 + 10, 0, Math.PI * 2);
-                        ctx.fillStyle = "#fff";
-                        ctx.fill();
-
-                        ctx.drawImage(uploadedImg, x, y, imgSize, imgSize);
-                        document.getElementById("downloadBtn").style.display = "block";
-                    };
-                };
-                reader.readAsDataURL(imageFile);
-            } else {
+            // If no uploaded image, show download button
+            if (!imageFile) {
                 document.getElementById("downloadBtn").style.display = "block";
+                return;
             }
+
+            // Process uploaded image
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const uploadedImg = new Image();
+                uploadedImg.src = e.target.result;
+
+                uploadedImg.onload = () => {
+                    const imgSize = qrSize * 0.25;
+                    const x = (qrSize - imgSize) / 2;
+                    const y = titleHeight + (qrSize - imgSize) / 2;
+
+                    // White circle behind image
+                    ctx.beginPath();
+                    ctx.arc(x + imgSize/2, y + imgSize/2, imgSize/2 + 10, 0, Math.PI * 2);
+                    ctx.fillStyle = "#fff";
+                    ctx.fill();
+
+                    // Draw image
+                    ctx.drawImage(uploadedImg, x, y, imgSize, imgSize);
+
+                    document.getElementById("downloadBtn").style.display = "block";
+                };
+            };
+            reader.readAsDataURL(imageFile);
         };
     }, 300);
 }
@@ -155,10 +169,11 @@ function downloadQR() {
     const canvas = document.getElementById("qrCanvas");
     const link = document.createElement("a");
     link.download = "qr_code.png";
-    link.href = canvas.toDataURL();
+    link.href = canvas.toDataURL("image/png");
     link.click();
 }
 </script>
+
 
 </body>
 </html>
