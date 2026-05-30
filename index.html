@@ -87,24 +87,29 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <script>
-function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+function wrapAndMeasure(ctx, text, maxWidth, lineHeight) {
     const words = text.split(" ");
     let line = "";
-
+    let lines = [];
+    
     for (let n = 0; n < words.length; n++) {
         const testLine = line + words[n] + " ";
         const metrics = ctx.measureText(testLine);
         const testWidth = metrics.width;
 
         if (testWidth > maxWidth && n > 0) {
-            ctx.fillText(line, x, y);
+            lines.push(line);
             line = words[n] + " ";
-            y += lineHeight;
         } else {
             line = testLine;
         }
     }
-    ctx.fillText(line, x, y);
+    lines.push(line);
+
+    return {
+        lines,
+        height: lines.length * lineHeight
+    };
 }
 
 function generateQR() {
@@ -127,7 +132,6 @@ function generateQR() {
     canvas.width = width;
     canvas.height = height;
 
-    // Areas
     const titleAreaHeight = height / 2;
     const qrAreaHeight = height / 2;
 
@@ -147,32 +151,37 @@ function generateQR() {
 
         qrImage.onload = () => {
 
-            // ⭐ Draw white background
+            // White background
             ctx.fillStyle = "#ffffff";
             ctx.fillRect(0, 0, width, height);
 
-            // ⭐ Draw BIG title text (black)
+            // Title text settings
             ctx.fillStyle = "#000000";
-            ctx.font = "bold 240px Inter";
+            ctx.font = "bold 120px Inter";
             ctx.textAlign = "center";
 
-            wrapText(
-                ctx,
-                title,
-                width / 2,
-                200,
-                width * 0.85,
-                140
-            );
+            const maxTextWidth = width * 0.85;
+            const lineHeight = 140;
 
-            // ⭐ Draw QR code in bottom half
+            // Measure wrapped text
+            const measured = wrapAndMeasure(ctx, title, maxTextWidth, lineHeight);
+
+            // Center vertically in top half
+            const startY = (titleAreaHeight - measured.height) / 2 + lineHeight;
+
+            // Draw wrapped lines
+            measured.lines.forEach((line, i) => {
+                ctx.fillText(line, width / 2, startY + i * lineHeight);
+            });
+
+            // Draw QR code in bottom half
             const qrSize = 900;
             const qrX = (width - qrSize) / 2;
             const qrY = titleAreaHeight + (qrAreaHeight - qrSize) / 2;
 
             ctx.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
 
-            // ⭐ Insert center image if uploaded
+            // Insert center image if uploaded
             if (!imageFile) {
                 document.getElementById("downloadBtn").style.display = "block";
                 return;
@@ -188,7 +197,6 @@ function generateQR() {
                     const x = qrX + (qrSize - imgSize) / 2;
                     const y = qrY + (qrSize - imgSize) / 2;
 
-                    // White circle behind image
                     ctx.beginPath();
                     ctx.arc(x + imgSize/2, y + imgSize/2, imgSize/2 + 20, 0, Math.PI * 2);
                     ctx.fillStyle = "#fff";
@@ -214,6 +222,7 @@ function downloadQR() {
     link.click();
 }
 </script>
+
 
 
 
