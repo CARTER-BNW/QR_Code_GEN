@@ -122,8 +122,9 @@ function generateQR() {
         qrImage.src = qrImg.src;
 
         qrImage.onload = () => {
-            // Draw title
-            ctx.fillStyle = "#ffffff";
+
+            // ⭐ TITLE IN BLACK ⭐
+            ctx.fillStyle = "#000000";
             ctx.font = "bold 40px Inter";
             ctx.textAlign = "center";
             ctx.fillText(title, qrSize / 2, 50);
@@ -131,7 +132,6 @@ function generateQR() {
             // Draw QR code under title
             ctx.drawImage(qrImage, 0, titleHeight, qrSize, qrSize);
 
-            // If no uploaded image, show download button
             if (!imageFile) {
                 document.getElementById("downloadBtn").style.display = "block";
                 return;
@@ -169,17 +169,14 @@ function downloadQR() {
     const canvas = document.getElementById("qrCanvas");
     const link = document.createElement("a");
 
-    // Force JPG output
+    // ⭐ FORCE JPG OUTPUT ⭐
     link.href = canvas.toDataURL("image/jpeg", 0.95);
-
-    // Force correct filename
     link.download = "qr_code.jpg";
 
     link.click();
-
-
 }
 </script>
+
 
 
 </body>
