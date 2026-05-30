@@ -1,92 +1,26 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QR Code Generator</title>
-
-<style>
-    body {
-        background: #0d0d0d;
-        color: #f2f2f2;
-        font-family: "Inter", sans-serif;
-        margin: 0;
-        padding: 20px;
-        text-align: center;
-    }
-
-    h1 {
-        margin-bottom: 20px;
-        font-size: 2rem;
-    }
-
-    input, button {
-        width: 90%;
-        max-width: 400px;
-        padding: 12px;
-        margin: 10px auto;
-        border-radius: 8px;
-        border: 1px solid #333;
-        background: #1a1a1a;
-        color: #fff;
-        font-size: 1rem;
-        display: block;
-    }
-
-    button {
-        cursor: pointer;
-        transition: 0.25s;
-    }
-
-    button:hover {
-        background: #222;
-        border-color: #666;
-        transform: translateY(-2px);
-    }
-
-    #preview-container {
-        margin-top: 30px;
-    }
-
-    #qr-title {
-        font-size: 1.4rem;
-        margin-bottom: 10px;
-    }
-
-    canvas {
-        margin-top: 10px;
-        background: #fff;
-        padding: 10px;
-        border-radius: 12px;
-    }
-
-    #downloadBtn {
-        margin-top: 20px;
-        display: none;
-    }
-</style>
-
-</head>
-<body>
-
-<h1>QR Code Generator</h1>
-
-<input type="text" id="titleInput" placeholder="Enter Title">
-<input type="text" id="linkInput" placeholder="Enter Link (URL)">
-<input type="file" id="imageUpload" accept="image/*">
-
-<button onclick="generateQR()">Create QR Code</button>
-
-<div id="preview-container">
-    <div id="qr-title"></div>
-    <canvas id="qrCanvas"></canvas>
-</div>
-
-<button id="downloadBtn" onclick="downloadQR()">Download QR Code</button>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <script>
+function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+    const words = text.split(" ");
+    let line = "";
+
+    for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + " ";
+        const metrics = ctx.measureText(testLine);
+        const testWidth = metrics.width;
+
+        if (testWidth > maxWidth && n > 0) {
+            ctx.fillText(line, x, y);
+            line = words[n] + " ";
+            y += lineHeight;
+        } else {
+            line = testLine;
+        }
+    }
+    ctx.fillText(line, x, y);
+}
+
 function generateQR() {
     const title = document.getElementById("titleInput").value;
     const link = document.getElementById("linkInput").value;
@@ -100,19 +34,23 @@ function generateQR() {
     const canvas = document.getElementById("qrCanvas");
     const ctx = canvas.getContext("2d");
 
-    const qrSize = 500;
-    const titleHeight = 80;
-    const totalHeight = qrSize + titleHeight;
+    // Final output resolution
+    const width = 1080;
+    const height = 1920;
 
-    canvas.width = qrSize;
-    canvas.height = totalHeight;
+    canvas.width = width;
+    canvas.height = height;
+
+    // Areas
+    const titleAreaHeight = height / 2;
+    const qrAreaHeight = height / 2;
 
     // Generate QR code in temp div
     const tempDiv = document.createElement("div");
     const qr = new QRCode(tempDiv, {
         text: link,
-        width: qrSize,
-        height: qrSize,
+        width: 1000,
+        height: 1000,
         correctLevel: QRCode.CorrectLevel.H
     });
 
@@ -123,21 +61,37 @@ function generateQR() {
 
         qrImage.onload = () => {
 
-            // ⭐ TITLE IN BLACK ⭐
+            // ⭐ Draw white background
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, width, height);
+
+            // ⭐ Draw BIG title text (black)
             ctx.fillStyle = "#000000";
-            ctx.font = "bold 40px Inter";
+            ctx.font = "bold 120px Inter";
             ctx.textAlign = "center";
-            ctx.fillText(title, qrSize / 2, 50);
 
-            // Draw QR code under title
-            ctx.drawImage(qrImage, 0, titleHeight, qrSize, qrSize);
+            wrapText(
+                ctx,
+                title,
+                width / 2,
+                200,
+                width * 0.85,
+                140
+            );
 
+            // ⭐ Draw QR code in bottom half
+            const qrSize = 900;
+            const qrX = (width - qrSize) / 2;
+            const qrY = titleAreaHeight + (qrAreaHeight - qrSize) / 2;
+
+            ctx.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
+
+            // ⭐ Insert center image if uploaded
             if (!imageFile) {
                 document.getElementById("downloadBtn").style.display = "block";
                 return;
             }
 
-            // Process uploaded image
             const reader = new FileReader();
             reader.onload = function(e) {
                 const uploadedImg = new Image();
@@ -145,16 +99,15 @@ function generateQR() {
 
                 uploadedImg.onload = () => {
                     const imgSize = qrSize * 0.25;
-                    const x = (qrSize - imgSize) / 2;
-                    const y = titleHeight + (qrSize - imgSize) / 2;
+                    const x = qrX + (qrSize - imgSize) / 2;
+                    const y = qrY + (qrSize - imgSize) / 2;
 
                     // White circle behind image
                     ctx.beginPath();
-                    ctx.arc(x + imgSize/2, y + imgSize/2, imgSize/2 + 10, 0, Math.PI * 2);
+                    ctx.arc(x + imgSize/2, y + imgSize/2, imgSize/2 + 20, 0, Math.PI * 2);
                     ctx.fillStyle = "#fff";
                     ctx.fill();
 
-                    // Draw image
                     ctx.drawImage(uploadedImg, x, y, imgSize, imgSize);
 
                     document.getElementById("downloadBtn").style.display = "block";
@@ -169,15 +122,9 @@ function downloadQR() {
     const canvas = document.getElementById("qrCanvas");
     const link = document.createElement("a");
 
-    // ⭐ FORCE JPG OUTPUT ⭐
     link.href = canvas.toDataURL("image/jpeg", 0.95);
     link.download = "qr_code.jpg";
 
     link.click();
 }
 </script>
-
-
-
-</body>
-</html>
